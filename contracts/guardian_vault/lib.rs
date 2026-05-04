@@ -331,7 +331,7 @@ pub mod guardian_vault {
         fn constructor_works() {
             let acc = accounts();
             set_caller(acc.alice);
-            let vault = guardian_vault::GuardianVault::new(
+            let vault = GuardianVault::new(
                 vec![acc.bob, acc.charlie, acc.django],
                 2,
                 86_400,
@@ -346,7 +346,7 @@ pub mod guardian_vault {
         fn rejects_invalid_threshold() {
             let acc = accounts();
             set_caller(acc.alice);
-            let res = guardian_vault::GuardianVault::new(vec![acc.bob], 2, 86_400);
+            let res = GuardianVault::new(vec![acc.bob], 2, 86_400);
             assert_eq!(res.unwrap_err(), Error::InvalidThreshold);
         }
 
@@ -354,7 +354,7 @@ pub mod guardian_vault {
         fn happy_path_recovery() {
             let acc = accounts();
             set_caller(acc.alice);
-            let mut vault = guardian_vault::GuardianVault::new(
+            let mut vault = GuardianVault::new(
                 vec![acc.bob, acc.charlie, acc.django],
                 2,
                 0,
@@ -377,7 +377,7 @@ pub mod guardian_vault {
         fn non_guardian_cannot_approve() {
             let acc = accounts();
             set_caller(acc.alice);
-            let mut vault = guardian_vault::GuardianVault::new(
+            let mut vault = GuardianVault::new(
                 vec![acc.bob, acc.charlie],
                 2,
                 0,
@@ -395,7 +395,7 @@ pub mod guardian_vault {
         fn owner_can_cancel() {
             let acc = accounts();
             set_caller(acc.alice);
-            let mut vault = guardian_vault::GuardianVault::new(
+            let mut vault = GuardianVault::new(
                 vec![acc.bob, acc.charlie],
                 1,
                 0,
