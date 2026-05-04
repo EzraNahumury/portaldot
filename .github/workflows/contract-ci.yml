@@ -1,0 +1,47 @@
+name: contract-ci
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "contracts/**"
+      - ".github/workflows/contract-ci.yml"
+  pull_request:
+    paths:
+      - "contracts/**"
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: contracts/guardian_vault
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: contracts/guardian_vault
+
+      - name: Install cargo-contract
+        run: cargo install --force --locked cargo-contract --version 5.0.0
+
+      - name: Format check
+        run: cargo fmt --all -- --check
+
+      - name: Clippy
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Unit tests
+        run: cargo test --release
+
+      - name: Build contract (WASM)
+        run: cargo contract build --release

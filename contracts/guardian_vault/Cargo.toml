@@ -1,0 +1,25 @@
+[package]
+name = "guardian_vault"
+version = "0.1.0"
+authors = ["Ezra Kristanto Nahumury <ezranhmry@gmail.com>"]
+edition = "2021"
+license = "MIT"
+description = "Social recovery vault — guardian-based wallet recovery for Portaldot."
+repository = "https://github.com/EzraNahumury/portaldot"
+
+[lib]
+path = "lib.rs"
+
+[dependencies]
+ink = { version = "5.0.0", default-features = false }
+
+[dev-dependencies]
+ink_e2e = { version = "5.0.0" }
+
+[features]
+default = ["std"]
+std = [
+    "ink/std",
+]
+ink-as-dependency = []
+e2e-tests = []

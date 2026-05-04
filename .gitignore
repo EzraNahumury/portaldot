@@ -1,0 +1,62 @@
+# ---- Rust / ink! ----
+**/target/
+**/Cargo.lock.bak
+*.wasm.bk
+
+# ---- Node / Next.js ----
+**/node_modules/
+**/.next/
+**/.turbo/
+**/dist/
+**/build/
+**/out/
+*.tsbuildinfo
+next-env.d.ts.bak
+
+# ---- Python ----
+**/__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.python-version
+
+# ---- Env / secrets ----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets.json
+
+# ---- Editor / OS ----
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- Claude Code ----
+.claude/
+
+# ---- Logs ----
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ---- Local artifacts ----
+/local-node-data/
+/chain-data/
+/.local/
+
+# ---- Coverage ----
+coverage/
+*.lcov
+.nyc_output/
+
+# ---- Build outputs (ink!) ----
+contracts/**/target/
+contracts/**/.cargo-cache/
