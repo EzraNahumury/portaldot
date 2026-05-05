@@ -10,7 +10,9 @@ import {
   KeyRound,
   ShieldCheck,
   ChevronRight,
+  RefreshCw,
 } from "lucide-react";
+import { WALLET_ICONS } from "./wallet-logos";
 import {
   WALLETS,
   detectInstalledIds,
@@ -35,11 +37,23 @@ export function WalletModal({ open, onClose }: Props) {
   const [installed, setInstalled] = useState<string[]>([]);
   const [recent, setRecent] = useState<WalletId | null>(null);
   const [busy, setBusy] = useState<WalletId | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // On modal open, ask every Substrate extension to inject (web3Enable
-  // triggers any first-run permission prompts and forces lazy injectors
-  // like SubWallet / Polkadot.js to populate window.injectedWeb3). After
-  // that, poll for late injections.
+  const refreshDetection = async () => {
+    setRefreshing(true);
+    try {
+      const { web3Enable } = await import("@polkadot/extension-dapp");
+      // Repeated web3Enable calls re-poll all extensions and pick up any new
+      // ones the user just authorized.
+      await web3Enable("PortalGuard");
+    } catch {
+      // ignore — picker still shows download links
+    }
+    setInstalled(detectInstalledIds());
+    setRefreshing(false);
+  };
+
+  // On open: trigger web3Enable so lazy injectors populate, then poll.
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
@@ -47,16 +61,7 @@ export function WalletModal({ open, onClose }: Props) {
       if (!cancelled) setInstalled(detectInstalledIds());
     };
     run();
-    void (async () => {
-      try {
-        const { web3Enable } = await import("@polkadot/extension-dapp");
-        await web3Enable("PortalGuard");
-      } catch {
-        // ignore — extensions may have rejected, picker still shows download links
-      } finally {
-        run();
-      }
-    })();
+    void refreshDetection();
     const id = window.setInterval(run, 600);
     setRecent(
       typeof window !== "undefined"
@@ -67,6 +72,7 @@ export function WalletModal({ open, onClose }: Props) {
       cancelled = true;
       window.clearInterval(id);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   // ESC to close
@@ -173,16 +179,30 @@ export function WalletModal({ open, onClose }: Props) {
 
               {/* LEFT */}
               <div className="border-b md:border-b-0 md:border-r border-stone-900">
-                <div className="px-6 pt-5 pb-3">
-                  <h2
-                    id="wallet-modal-title"
-                    className="font-display text-[24px] leading-tight tracking-tight text-stone-100"
+                <div className="px-6 pt-5 pb-3 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h2
+                      id="wallet-modal-title"
+                      className="font-display text-[24px] leading-tight tracking-tight text-stone-100"
+                    >
+                      Connect a wallet
+                    </h2>
+                    <p className="mt-1 text-[12.5px] text-stone-500">
+                      {installed.length > 0
+                        ? `${installed.length} substrate wallet${installed.length === 1 ? "" : "s"} detected`
+                        : "Substrate wallets work on Portaldot. Pick one below."}
+                    </p>
+                  </div>
+                  <button
+                    onClick={refreshDetection}
+                    disabled={refreshing}
+                    className="shrink-0 size-8 rounded-md border border-stone-800 bg-stone-900/40 hover:bg-stone-900 text-stone-400 hover:text-stone-100 inline-flex items-center justify-center transition-colors disabled:opacity-60"
+                    aria-label="Refresh wallet list"
                   >
-                    Connect a wallet
-                  </h2>
-                  <p className="mt-1 text-[12.5px] text-stone-500">
-                    Substrate wallets work on Portaldot. Pick one below.
-                  </p>
+                    <RefreshCw
+                      className={`size-3.5 ${refreshing ? "animate-spin" : ""}`}
+                    />
+                  </button>
                 </div>
 
                 <div className="px-3 pb-5">
@@ -296,18 +316,23 @@ function WalletRow({
   loading: boolean;
   onClick: () => void;
 }) {
+  const Logo = WALLET_ICONS[wallet.id];
   return (
     <button
       onClick={onClick}
       disabled={loading}
       className="group w-full px-3 py-2.5 rounded-md flex items-center gap-3 hover:bg-stone-900/60 transition-colors text-left disabled:opacity-60"
     >
-      <span
-        className="size-9 rounded-md flex items-center justify-center shrink-0 text-[13px] font-semibold ring-1 ring-stone-800"
-        style={{ background: wallet.brand.bg, color: wallet.brand.fg }}
-      >
-        {wallet.brand.letter}
-      </span>
+      {Logo ? (
+        <Logo className="size-9 shrink-0 rounded-md ring-1 ring-stone-800" />
+      ) : (
+        <span
+          className="size-9 rounded-md flex items-center justify-center shrink-0 text-[13px] font-semibold ring-1 ring-stone-800"
+          style={{ background: wallet.brand.bg, color: wallet.brand.fg }}
+        >
+          {wallet.brand.letter}
+        </span>
+      )}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="text-[14px] text-stone-100 font-medium truncate">
