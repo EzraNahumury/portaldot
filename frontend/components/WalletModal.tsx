@@ -14,6 +14,8 @@ import {
 import {
   WALLETS,
   detectInstalledIds,
+  findWallet,
+  genericWallet,
   type WalletInfo,
   type WalletId,
 } from "@/lib/wallets";
@@ -30,22 +32,41 @@ const RECENT_KEY = "portalguard:recent-wallet";
 
 export function WalletModal({ open, onClose }: Props) {
   const setAccount = usePortalStore((s) => s.setAccount);
-  const [installed, setInstalled] = useState<WalletId[]>([]);
+  const [installed, setInstalled] = useState<string[]>([]);
   const [recent, setRecent] = useState<WalletId | null>(null);
   const [busy, setBusy] = useState<WalletId | null>(null);
 
-  // Refresh installed list whenever the modal opens (extensions inject async)
+  // On modal open, ask every Substrate extension to inject (web3Enable
+  // triggers any first-run permission prompts and forces lazy injectors
+  // like SubWallet / Polkadot.js to populate window.injectedWeb3). After
+  // that, poll for late injections.
   useEffect(() => {
     if (!open) return;
-    const run = () => setInstalled(detectInstalledIds());
+    let cancelled = false;
+    const run = () => {
+      if (!cancelled) setInstalled(detectInstalledIds());
+    };
     run();
+    void (async () => {
+      try {
+        const { web3Enable } = await import("@polkadot/extension-dapp");
+        await web3Enable("PortalGuard");
+      } catch {
+        // ignore — extensions may have rejected, picker still shows download links
+      } finally {
+        run();
+      }
+    })();
     const id = window.setInterval(run, 600);
     setRecent(
       typeof window !== "undefined"
         ? (window.localStorage.getItem(RECENT_KEY) as WalletId | null)
         : null,
     );
-    return () => window.clearInterval(id);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
   }, [open]);
 
   // ESC to close
@@ -69,11 +90,17 @@ export function WalletModal({ open, onClose }: Props) {
   }, [open]);
 
   const { installedList, popularList } = useMemo(() => {
-    const sortKey = (w: WalletInfo) =>
-      recent && w.id === recent ? -1 : installed.indexOf(w.id);
-    const installedList = WALLETS.filter((w) => installed.includes(w.id)).sort(
-      (a, b) => sortKey(a) - sortKey(b),
+    const installedList: WalletInfo[] = installed.map(
+      (id) => findWallet(id) ?? genericWallet(id),
     );
+    // Recent first, then in injection order.
+    if (recent) {
+      const idx = installedList.findIndex((w) => w.id === recent);
+      if (idx > 0) {
+        const [r] = installedList.splice(idx, 1);
+        installedList.unshift(r);
+      }
+    }
     const popularList = WALLETS.filter((w) => !installed.includes(w.id));
     return { installedList, popularList };
   }, [installed, recent]);

@@ -6,13 +6,7 @@
  * the picker still feels like a real wallet directory.
  */
 
-export type WalletId =
-  | "polkadot-js"
-  | "talisman"
-  | "subwallet-js"
-  | "enkrypt"
-  | "polkagate"
-  | "nova";
+export type WalletId = string;
 
 export type WalletCategory = "installed" | "popular" | "mobile";
 
@@ -81,16 +75,43 @@ export function findWallet(id: string): WalletInfo | undefined {
 }
 
 /**
- * Synchronously check window.injectedWeb3 for installed Substrate
- * extensions. This is non-blocking and does NOT prompt the user — useful
- * to render the "Installed" / "Popular" split in the picker modal before
- * the user actually clicks anything.
+ * Build a generic registry entry for an injected extension we don't have
+ * branded metadata for. Lets unknown but valid Substrate wallets still
+ * appear in the "Installed" section.
  */
-export function detectInstalledIds(): WalletId[] {
+export function genericWallet(id: string): WalletInfo {
+  const initials = id
+    .replace(/[-_]/g, " ")
+    .split(" ")
+    .filter(Boolean)
+    .map((p) => p[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+  const name = id
+    .split(/[-_]/)
+    .map((p) => p[0]?.toUpperCase() + p.slice(1))
+    .join(" ");
+  return {
+    id: id as WalletId,
+    name: name || id,
+    tagline: "Substrate wallet",
+    brand: { bg: "#1c1917", fg: "#e7e5e4", letter: initials || "?" },
+    downloadUrl: "https://wiki.polkadot.network/docs/learn-wallets",
+    category: "extension",
+  };
+}
+
+/**
+ * Snapshot all keys from window.injectedWeb3 — extensions populate this
+ * lazily, so this should be polled while the picker is open. Each ID may
+ * or may not match a curated WALLETS entry; the modal then decorates with
+ * either branded or generic metadata.
+ */
+export function detectInstalledIds(): string[] {
   if (typeof window === "undefined") return [];
   const inj = (window as { injectedWeb3?: Record<string, unknown> })
     .injectedWeb3;
   if (!inj) return [];
-  const known = new Set<string>(WALLETS.map((w) => w.id));
-  return Object.keys(inj).filter((k) => known.has(k)) as WalletId[];
+  return Object.keys(inj);
 }
