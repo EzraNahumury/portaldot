@@ -2,43 +2,54 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, Sparkles } from "lucide-react";
+import { Plus, Trash2, Sparkles, Shield } from "lucide-react";
 import { toast } from "sonner";
-import { Card, CardHeader, CardTitle, CardDescription, CardBody, CardFooter } from "@/components/ui/Card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardBody,
+  CardFooter,
+} from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Input";
 import { usePortalStore } from "@/lib/store";
 import { getApi } from "@/lib/portaldot";
 import { getSigner } from "@/lib/wallet";
-import { deployVault } from "@/lib/contract";
+import {
+  buildBatchAddGuardiansTx,
+  secondsToBlocks,
+  signAndSend,
+} from "@/lib/multisig";
 
 export default function SetupPage() {
   const router = useRouter();
   const account = usePortalStore((s) => s.account);
-  const setVaultAddress = usePortalStore((s) => s.setVaultAddress);
+  const setVault = usePortalStore((s) => s.setVault);
 
   const [guardians, setGuardians] = useState<string[]>(["", "", ""]);
   const [threshold, setThreshold] = useState(2);
-  const [timelock, setTimelock] = useState(60);
-  const [deploying, setDeploying] = useState(false);
+  const [timelockSeconds, setTimelockSeconds] = useState(60);
+  const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState<string>("");
 
   function updateGuardian(i: number, value: string) {
     setGuardians((arr) => arr.map((g, idx) => (idx === i ? value : g)));
   }
 
-  function addGuardian() {
+  function addGuardianRow() {
     if (guardians.length >= 32) return;
     setGuardians([...guardians, ""]);
   }
 
-  function removeGuardian(i: number) {
+  function removeGuardianRow(i: number) {
     if (guardians.length <= 1) return;
     setGuardians(guardians.filter((_, idx) => idx !== i));
     if (threshold > guardians.length - 1) setThreshold(guardians.length - 1);
   }
 
-  async function handleDeploy() {
+  async function handleProtect() {
     if (!account) {
       toast.error("Connect wallet first.");
       return;
@@ -48,40 +59,45 @@ export default function SetupPage() {
       toast.error("Add at least one guardian.");
       return;
     }
-    if (threshold < 1 || threshold > cleaned.length) {
-      toast.error(`Threshold must be 1..${cleaned.length}.`);
-      return;
-    }
     if (new Set(cleaned).size !== cleaned.length) {
       toast.error("Duplicate guardian addresses.");
       return;
     }
+    if (threshold < 1 || threshold > cleaned.length) {
+      toast.error(`Threshold must be 1..${cleaned.length}.`);
+      return;
+    }
 
-    setDeploying(true);
+    setSubmitting(true);
     setStatus("Connecting to Portaldot...");
     try {
       const api = await getApi();
+      const delayBlocks = secondsToBlocks(timelockSeconds);
+      const tx = buildBatchAddGuardiansTx(api, cleaned, delayBlocks);
+
       setStatus("Loading wallet signer...");
       const signer = await getSigner(account.address);
-      setStatus("Submitting deploy transaction...");
-      const { address, hash } = await deployVault(
-        api,
-        account.address,
-        signer,
-        cleaned,
-        threshold,
-        timelock,
-        (s) => setStatus(s),
+
+      setStatus(`Submitting utility.batchAll(${cleaned.length} × proxy.add_proxy)...`);
+      const { blockHash } = await signAndSend(tx, account.address, signer, (s) =>
+        setStatus(s),
       );
-      setVaultAddress(address);
-      toast.success(`Vault deployed at ${address.slice(0, 10)}…`);
-      console.log("Vault deploy hash:", hash);
+
+      setVault({
+        ownerAddress: account.address,
+        guardians: cleaned,
+        threshold,
+        timelockBlocks: delayBlocks,
+        guardianMultisig: "",
+      });
+
+      toast.success(`Vault protected. tx ${blockHash.slice(0, 10)}…`);
       router.push("/dashboard");
     } catch (e) {
       toast.error((e as Error).message);
       setStatus("");
     } finally {
-      setDeploying(false);
+      setSubmitting(false);
     }
   }
 
@@ -93,11 +109,13 @@ export default function SetupPage() {
           Step 1
         </div>
         <h1 className="text-4xl font-semibold tracking-tight text-zinc-100">
-          Create your vault
+          Protect your account
         </h1>
         <p className="mt-3 text-zinc-400">
-          Pick guardians you trust. They never see your funds — only help you regain
-          access if you lose your keys.
+          Each guardian becomes a delayed proxy on your account. To recover, the
+          guardian collective coordinates off-chain (M-of-N approvals) and one of
+          them submits an on-chain announcement. The time-lock then gives you
+          room to cancel before funds move.
         </p>
       </div>
 
@@ -105,7 +123,7 @@ export default function SetupPage() {
         <CardHeader>
           <CardTitle>Guardian list</CardTitle>
           <CardDescription>
-            SS58 addresses of your guardians. 1–32 supported.
+            SS58 addresses. Each will be added as `proxy.add_proxy(Any, delay)`.
           </CardDescription>
         </CardHeader>
         <CardBody className="space-y-3">
@@ -122,7 +140,7 @@ export default function SetupPage() {
               <Button
                 variant="ghost"
                 size="md"
-                onClick={() => removeGuardian(i)}
+                onClick={() => removeGuardianRow(i)}
                 disabled={guardians.length <= 1}
                 aria-label="Remove guardian"
               >
@@ -130,14 +148,14 @@ export default function SetupPage() {
               </Button>
             </div>
           ))}
-          <Button variant="secondary" size="sm" onClick={addGuardian}>
+          <Button variant="secondary" size="sm" onClick={addGuardianRow}>
             <Plus className="size-4" />
             Add guardian
           </Button>
         </CardBody>
         <CardFooter className="grid grid-cols-2 gap-4">
           <div>
-            <Label>Threshold (M of N)</Label>
+            <Label>Threshold (M of N) — UX-enforced</Label>
             <Input
               type="number"
               min={1}
@@ -146,30 +164,44 @@ export default function SetupPage() {
               onChange={(e) => setThreshold(Number(e.target.value))}
             />
             <p className="mt-2 text-xs text-zinc-500">
-              {threshold}-of-{guardians.length} guardians needed to recover.
+              {threshold}-of-{guardians.length} guardians needed (off-chain).
             </p>
           </div>
           <div>
             <Label>Time-lock (seconds)</Label>
             <Input
               type="number"
-              min={0}
-              value={timelock}
-              onChange={(e) => setTimelock(Number(e.target.value))}
+              min={6}
+              step={6}
+              value={timelockSeconds}
+              onChange={(e) => setTimelockSeconds(Number(e.target.value))}
             />
             <p className="mt-2 text-xs text-zinc-500">
-              Use 86400 for 24h prod default. Demo can be 60.
+              ~{secondsToBlocks(timelockSeconds)} block delay (~6s/block).
             </p>
           </div>
         </CardFooter>
       </Card>
 
-      <div className="mt-8 flex items-center justify-between">
-        <p className="text-sm text-zinc-500 font-mono truncate max-w-md">
-          {status}
-        </p>
-        <Button onClick={handleDeploy} loading={deploying} size="lg">
-          Deploy Vault
+      <div className="mt-6 rounded-2xl border border-violet-500/30 bg-violet-500/5 p-5">
+        <div className="flex items-start gap-3">
+          <Shield className="size-5 text-violet-300 shrink-0 mt-0.5" />
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-violet-100">What happens on chain</p>
+            <ul className="mt-2 space-y-1 list-disc list-inside text-xs text-violet-300/80">
+              <li>One `utility.batchAll` extrinsic from your account</li>
+              <li>Inside: {guardians.length || "N"} × `proxy.add_proxy(guardian, Any, delay)`</li>
+              <li>POT used as gas for the batched call</li>
+              <li>Each proxy reserves a small POT deposit (refunded on remove)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-8 flex items-center justify-between gap-3">
+        <p className="text-sm text-zinc-500 font-mono truncate max-w-md">{status}</p>
+        <Button onClick={handleProtect} loading={submitting} size="lg" disabled={!account}>
+          Protect Account
         </Button>
       </div>
     </div>

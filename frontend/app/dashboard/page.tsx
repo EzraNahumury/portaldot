@@ -2,11 +2,24 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { ShieldCheck, RefreshCw, Copy, Check, ExternalLink, Ban } from "lucide-react";
+import {
+  ShieldCheck,
+  RefreshCw,
+  Copy,
+  Check,
+  Ban,
+  Trash2,
+  Play,
+} from "lucide-react";
 import { toast } from "sonner";
-import { Card, CardHeader, CardTitle, CardDescription, CardBody } from "@/components/ui/Card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardBody,
+} from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Input, Label } from "@/components/ui/Input";
 import { GuardianList } from "@/components/GuardianList";
 import { RecoveryStatus } from "@/components/RecoveryStatus";
 import { CountdownTimer } from "@/components/CountdownTimer";
@@ -14,73 +27,116 @@ import { usePortalStore } from "@/lib/store";
 import { getApi } from "@/lib/portaldot";
 import { getSigner } from "@/lib/wallet";
 import {
-  getVaultContract,
-  readVaultState,
-  callCancelRecovery,
-  callExecuteRecovery,
-  type VaultState,
-} from "@/lib/contract";
+  buildRejectAnnouncementTx,
+  buildBatchAddGuardiansTx,
+  buildRemoveGuardianProxyTx,
+  buildProxyAnnouncedTx,
+  buildRecoveryInnerCall,
+  readOwnerProxies,
+  readGuardianAnnouncements,
+  signAndSend,
+  getCurrentBlock,
+  loadRecoveryProposal,
+  clearRecoveryProposal,
+  type GuardianProxy,
+  type AnnouncementInfo,
+  type RecoveryProposal,
+  BLOCK_TIME_MS,
+} from "@/lib/multisig";
 import { shortAddr, formatTimeRemaining } from "@/lib/format";
 
 export default function DashboardPage() {
   const account = usePortalStore((s) => s.account);
-  const vaultAddress = usePortalStore((s) => s.vaultAddress);
-  const setVaultAddress = usePortalStore((s) => s.setVaultAddress);
+  const vault = usePortalStore((s) => s.vault);
+  const resetVault = usePortalStore((s) => s.resetVault);
 
-  const [vaultInput, setVaultInput] = useState(vaultAddress);
-  const [state, setState] = useState<VaultState | null>(null);
+  const [proxies, setProxies] = useState<GuardianProxy[]>([]);
+  const [announcements, setAnnouncements] = useState<AnnouncementInfo[]>([]);
+  const [proposal, setProposal] = useState<RecoveryProposal | null>(null);
+  const [currentBlock, setCurrentBlock] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [acting, setActing] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const refresh = useCallback(async () => {
-    if (!vaultAddress) return;
+    if (!vault?.ownerAddress) return;
     setLoading(true);
     try {
       const api = await getApi();
-      const contract = await getVaultContract(api, vaultAddress);
-      const s = await readVaultState(contract, account?.address ?? vaultAddress);
-      setState(s);
+      const block = await getCurrentBlock(api);
+      setCurrentBlock(block);
+
+      const px = await readOwnerProxies(api, vault.ownerAddress);
+      setProxies(px);
+
+      const allAnnouncements: AnnouncementInfo[] = [];
+      for (const p of px) {
+        if (!vault.guardians.includes(p.delegate)) continue;
+        const annsForGuardian = await readGuardianAnnouncements(
+          api,
+          p.delegate,
+          vault.ownerAddress,
+          p.delay,
+          block,
+        );
+        allAnnouncements.push(...annsForGuardian);
+      }
+      setAnnouncements(allAnnouncements);
+
+      setProposal(loadRecoveryProposal(vault.ownerAddress));
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
       setLoading(false);
     }
-  }, [vaultAddress, account]);
+  }, [vault]);
 
   useEffect(() => {
     void refresh();
   }, [refresh]);
 
-  function loadVault() {
-    const v = vaultInput.trim();
-    if (!v) return;
-    setVaultAddress(v);
-    setState(null);
-  }
-
-  async function handleCopy() {
-    if (!vaultAddress) return;
-    await navigator.clipboard.writeText(vaultAddress);
+  async function handleCopy(text: string) {
+    await navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 1200);
   }
 
-  async function handleExecute() {
-    if (!account || !state?.activeRecovery) return;
+  async function handleRejectAnnouncement(ann: AnnouncementInfo) {
+    if (!account || !vault) return;
     setActing(true);
     try {
       const api = await getApi();
-      const contract = await getVaultContract(api, vaultAddress);
+      const tx = buildRejectAnnouncementTx(api, ann.guardian, ann.callHash);
       const signer = await getSigner(account.address);
-      await callExecuteRecovery(
-        contract,
-        account.address,
-        signer,
-        state.activeRecovery.id,
-        (s) => toast.message(s),
-      );
+      await signAndSend(tx, account.address, signer, (s) => toast.message(s));
+      toast.success("Announcement rejected.");
+      await refresh();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setActing(false);
+    }
+  }
+
+  async function handleExecute(ann: AnnouncementInfo) {
+    if (!account || !vault) return;
+    if (!proposal?.newOwner) {
+      toast.error("No proposal in cache. Have a guardian re-create from /recover.");
+      return;
+    }
+    if (ann.remainingBlocks > 0) {
+      toast.error(`Time-lock still active (${ann.remainingBlocks} blocks).`);
+      return;
+    }
+    setActing(true);
+    try {
+      const api = await getApi();
+      const inner = buildRecoveryInnerCall(api, proposal.newOwner);
+      const tx = buildProxyAnnouncedTx(api, ann.guardian, vault.ownerAddress, inner);
+      const signer = await getSigner(account.address);
+      await signAndSend(tx, account.address, signer, (s) => toast.message(s));
       toast.success("Recovery executed.");
+      clearRecoveryProposal(vault.ownerAddress);
       await refresh();
     } catch (e) {
       toast.error((e as Error).message);
@@ -89,21 +145,22 @@ export default function DashboardPage() {
     }
   }
 
-  async function handleCancel() {
-    if (!account || !state?.activeRecovery) return;
+  async function handleAddMissingProxies() {
+    if (!account || !vault) return;
+    const missing = vault.guardians.filter(
+      (g) => !proxies.some((p) => p.delegate === g),
+    );
+    if (missing.length === 0) {
+      toast.message("Nothing missing.");
+      return;
+    }
     setActing(true);
     try {
       const api = await getApi();
-      const contract = await getVaultContract(api, vaultAddress);
+      const tx = buildBatchAddGuardiansTx(api, missing, vault.timelockBlocks);
       const signer = await getSigner(account.address);
-      await callCancelRecovery(
-        contract,
-        account.address,
-        signer,
-        state.activeRecovery.id,
-        (s) => toast.message(s),
-      );
-      toast.success("Recovery cancelled.");
+      await signAndSend(tx, account.address, signer, (s) => toast.message(s));
+      toast.success("Missing guardian proxies added.");
       await refresh();
     } catch (e) {
       toast.error((e as Error).message);
@@ -112,217 +169,225 @@ export default function DashboardPage() {
     }
   }
 
-  // Derive recovery status
+  async function handleDetach() {
+    if (!account || !vault) return;
+    setActing(true);
+    try {
+      const api = await getApi();
+      const calls = vault.guardians.map((g) =>
+        buildRemoveGuardianProxyTx(api, g, vault.timelockBlocks),
+      );
+      const batch = api.tx.utility.batchAll(calls);
+      const signer = await getSigner(account.address);
+      await signAndSend(batch, account.address, signer, (s) => toast.message(s));
+      toast.success("All guardian proxies removed.");
+      resetVault();
+      clearRecoveryProposal(vault.ownerAddress);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setActing(false);
+    }
+  }
+
+  const guardianProxiesAttached = vault
+    ? vault.guardians.filter((g) => proxies.some((p) => p.delegate === g)).length
+    : 0;
+
   let status: "none" | "active" | "approved" | "executable" = "none";
-  let timelockTargetMs = 0;
-  if (state?.activeRecovery) {
-    const requestedAtMs = Number(state.activeRecovery.requestedAt);
-    const timelockMs = Number(state.timelockSeconds) * 1000;
-    timelockTargetMs = requestedAtMs + timelockMs;
-    const approvalsMet = state.activeRecovery.approvals.length >= state.threshold;
-    if (!approvalsMet) status = "active";
-    else if (Date.now() < timelockTargetMs) status = "approved";
-    else status = "executable";
+  if (announcements.length > 0) {
+    const ann = announcements[0];
+    status = ann.remainingBlocks === 0 ? "executable" : "approved";
+  } else if (proposal && proposal.approvals.length < (vault?.threshold ?? 99)) {
+    status = "active";
+  }
+
+  if (!vault) {
+    return (
+      <div className="mx-auto max-w-2xl w-full px-6 py-32 text-center">
+        <ShieldCheck className="size-12 mx-auto text-zinc-700 mb-4" />
+        <h1 className="text-2xl font-semibold text-zinc-100 mb-2">No vault loaded</h1>
+        <p className="text-zinc-400 mb-8">
+          <Link href="/setup" className="text-violet-400 hover:text-violet-300 underline">
+            Create a vault
+          </Link>{" "}
+          to get started.
+        </p>
+      </div>
+    );
   }
 
   return (
     <div className="mx-auto max-w-5xl w-full px-6 py-12 space-y-8">
-      {/* Vault address loader */}
       <Card>
-        <CardBody className="flex flex-col md:flex-row md:items-end gap-3">
-          <div className="flex-1">
-            <Label>Vault address</Label>
-            <Input
-              placeholder="5... (deployed contract address)"
-              value={vaultInput}
-              onChange={(e) => setVaultInput(e.target.value)}
-              className="font-mono"
-            />
+        <CardHeader className="flex flex-row items-start justify-between gap-4">
+          <div className="min-w-0">
+            <CardTitle>Your vault</CardTitle>
+            <div className="mt-2 flex items-center gap-2">
+              <code className="font-mono text-xs text-zinc-400 truncate">
+                {vault.ownerAddress}
+              </code>
+              <button
+                onClick={() => handleCopy(vault.ownerAddress)}
+                className="text-zinc-500 hover:text-zinc-200 transition-colors"
+              >
+                {copied ? (
+                  <Check className="size-3.5 text-emerald-400" />
+                ) : (
+                  <Copy className="size-3.5" />
+                )}
+              </button>
+            </div>
           </div>
-          <Button onClick={loadVault} variant="secondary">
-            Load
-          </Button>
-          <Button onClick={refresh} loading={loading} disabled={!vaultAddress}>
+          <RecoveryStatus status={status} />
+        </CardHeader>
+        <CardBody className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-6 border-t border-zinc-900">
+          <Stat
+            label="Guardians on chain"
+            value={`${guardianProxiesAttached}/${vault.guardians.length}`}
+          />
+          <Stat
+            label="Threshold (UX)"
+            value={`${vault.threshold}-of-${vault.guardians.length}`}
+          />
+          <Stat
+            label="Time-lock"
+            value={formatTimeRemaining(vault.timelockBlocks * BLOCK_TIME_MS)}
+          />
+          <Stat label="Block" value={`#${currentBlock}`} />
+        </CardBody>
+        <CardBody className="border-t border-zinc-900 pt-4 flex flex-wrap items-center gap-3">
+          <Button onClick={refresh} loading={loading} variant="secondary" size="sm">
             <RefreshCw className="size-4" />
             Refresh
+          </Button>
+          {guardianProxiesAttached < vault.guardians.length && (
+            <Button onClick={handleAddMissingProxies} loading={acting} size="sm">
+              Add missing proxies (
+              {vault.guardians.length - guardianProxiesAttached})
+            </Button>
+          )}
+          <Button onClick={handleDetach} loading={acting} variant="ghost" size="sm">
+            <Trash2 className="size-4" />
+            Detach all
           </Button>
         </CardBody>
       </Card>
 
-      {!vaultAddress && (
+      <div className="grid md:grid-cols-2 gap-6">
         <Card>
-          <CardBody className="py-16 text-center">
-            <ShieldCheck className="size-10 mx-auto text-zinc-700 mb-4" />
-            <p className="text-zinc-400">
-              No vault loaded. Paste a vault address above, or{" "}
-              <Link href="/setup" className="text-violet-400 hover:text-violet-300 underline">
-                create one
-              </Link>
-              .
-            </p>
+          <CardHeader>
+            <CardTitle>Guardian roster</CardTitle>
+            <CardDescription>
+              Each guardian holds a delayed proxy on your account.
+            </CardDescription>
+          </CardHeader>
+          <CardBody>
+            <GuardianList
+              guardians={vault.guardians}
+              approvals={proxies
+                .filter((p) => vault.guardians.includes(p.delegate))
+                .map((p) => p.delegate)}
+              threshold={undefined}
+            />
           </CardBody>
         </Card>
-      )}
 
-      {vaultAddress && state && (
-        <>
-          {/* Vault summary */}
-          <Card>
-            <CardHeader className="flex flex-row items-start justify-between gap-4">
-              <div className="min-w-0">
-                <CardTitle>Vault</CardTitle>
-                <div className="mt-2 flex items-center gap-2">
-                  <code className="font-mono text-xs text-zinc-400 truncate">
-                    {vaultAddress}
+        <Card>
+          <CardHeader>
+            <CardTitle>Active recovery</CardTitle>
+            <CardDescription>
+              {announcements.length > 0
+                ? "An announcement is on chain — time-lock counting down."
+                : proposal
+                ? "Off-chain proposal in flight."
+                : "Vault healthy."}
+            </CardDescription>
+          </CardHeader>
+          <CardBody className="space-y-5">
+            {announcements.map((ann) => (
+              <div
+                key={`${ann.guardian}-${ann.callHash}`}
+                className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4 space-y-3"
+              >
+                <div>
+                  <p className="text-xs uppercase tracking-wider text-zinc-500">
+                    Announced by
+                  </p>
+                  <code className="font-mono text-sm text-zinc-200">
+                    {shortAddr(ann.guardian, 8, 6)}
                   </code>
-                  <button
-                    onClick={handleCopy}
-                    className="text-zinc-500 hover:text-zinc-200 transition-colors"
-                    aria-label="Copy address"
+                </div>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <CountdownTimer
+                    targetTimestampMs={Date.now() + ann.remainingBlocks * BLOCK_TIME_MS}
+                  />
+                  <span className="text-sm text-zinc-500">
+                    Block #{ann.executableAt}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    onClick={() => handleExecute(ann)}
+                    loading={acting}
+                    variant="secondary"
+                    size="sm"
+                    disabled={ann.remainingBlocks > 0}
                   >
-                    {copied ? (
-                      <Check className="size-3.5 text-emerald-400" />
-                    ) : (
-                      <Copy className="size-3.5" />
-                    )}
-                  </button>
+                    <Play className="size-4" />
+                    Execute
+                  </Button>
+                  <Button
+                    onClick={() => handleRejectAnnouncement(ann)}
+                    loading={acting}
+                    variant="danger"
+                    size="sm"
+                  >
+                    <Ban className="size-4" />
+                    Reject
+                  </Button>
                 </div>
               </div>
-              <RecoveryStatus status={status} />
-            </CardHeader>
-            <CardBody className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-6 border-t border-zinc-900">
-              <Stat label="Owner" value={shortAddr(state.owner, 6, 4)} mono />
-              <Stat
-                label="Threshold"
-                value={`${state.threshold}-of-${state.guardians.length}`}
-              />
-              <Stat
-                label="Time-lock"
-                value={formatTimeRemaining(Number(state.timelockSeconds) * 1000)}
-              />
-              <Stat
-                label="Recovery"
-                value={state.activeRecovery ? `#${state.activeRecovery.id}` : "—"}
-              />
-            </CardBody>
-          </Card>
+            ))}
 
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Guardians */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Guardians</CardTitle>
-                <CardDescription>
-                  Trusted accounts that can collectively recover this vault.
-                </CardDescription>
-              </CardHeader>
-              <CardBody>
-                <GuardianList
-                  guardians={state.guardians}
-                  approvals={state.activeRecovery?.approvals ?? []}
-                  threshold={
-                    state.activeRecovery ? state.threshold : undefined
-                  }
-                />
-              </CardBody>
-            </Card>
+            {announcements.length === 0 && proposal && (
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 space-y-2">
+                <p className="text-xs uppercase tracking-wider text-amber-200/70">
+                  Off-chain proposal
+                </p>
+                <p className="text-sm text-amber-100">
+                  New owner: <code className="font-mono">{shortAddr(proposal.newOwner)}</code>
+                </p>
+                <p className="text-xs text-amber-200/70">
+                  {proposal.approvals.length}/{vault.threshold} guardian approvals
+                  collected · proposed by {shortAddr(proposal.proposedBy)}
+                </p>
+                <Link
+                  href="/recover"
+                  className="text-xs text-violet-300 hover:text-violet-200 inline-flex items-center"
+                >
+                  Manage proposal →
+                </Link>
+              </div>
+            )}
 
-            {/* Active recovery */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Active recovery</CardTitle>
-                <CardDescription>
-                  {state.activeRecovery
-                    ? "A recovery is in progress."
-                    : "No recovery requested."}
-                </CardDescription>
-              </CardHeader>
-              <CardBody className="space-y-5">
-                {state.activeRecovery ? (
-                  <>
-                    <div>
-                      <Label>Proposed new owner</Label>
-                      <code className="block font-mono text-sm text-zinc-200 break-all">
-                        {state.activeRecovery.proposedOwner}
-                      </code>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <CountdownTimer targetTimestampMs={timelockTargetMs} />
-                      <span className="text-sm text-zinc-500">
-                        {state.activeRecovery.approvals.length}/{state.threshold} approved
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        onClick={handleExecute}
-                        loading={acting}
-                        disabled={status !== "executable"}
-                      >
-                        Execute Recovery
-                      </Button>
-                      <Button
-                        onClick={handleCancel}
-                        loading={acting}
-                        variant="danger"
-                        disabled={
-                          !account || account.address !== state.owner
-                        }
-                      >
-                        <Ban className="size-4" />
-                        Cancel (Owner only)
-                      </Button>
-                      <Link
-                        href={`/approve/${state.activeRecovery.id}`}
-                        className="inline-flex items-center gap-2 h-11 px-5 rounded-xl border border-zinc-800 hover:bg-zinc-900 text-zinc-200 text-sm font-medium transition-colors"
-                      >
-                        Approve view
-                        <ExternalLink className="size-3.5" />
-                      </Link>
-                    </div>
-                  </>
-                ) : (
-                  <div className="py-8 text-center">
-                    <p className="text-sm text-zinc-500">
-                      Vault is healthy. No recovery pending.
-                    </p>
-                    <Link
-                      href="/recover"
-                      className="mt-4 inline-flex text-sm text-violet-400 hover:text-violet-300"
-                    >
-                      Need to recover? →
-                    </Link>
-                  </div>
-                )}
-              </CardBody>
-            </Card>
-          </div>
-        </>
-      )}
+            {announcements.length === 0 && !proposal && (
+              <div className="py-8 text-center">
+                <p className="text-sm text-zinc-500">No recovery pending.</p>
+              </div>
+            )}
+          </CardBody>
+        </Card>
+      </div>
     </div>
   );
 }
 
-function Stat({
-  label,
-  value,
-  mono,
-}: {
-  label: string;
-  value: string;
-  mono?: boolean;
-}) {
+function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-xs uppercase tracking-wider text-zinc-500 mb-1.5">
-        {label}
-      </p>
-      <p
-        className={`text-zinc-100 ${
-          mono ? "font-mono text-sm" : "text-base font-semibold"
-        }`}
-      >
-        {value}
-      </p>
+      <p className="text-xs uppercase tracking-wider text-zinc-500 mb-1.5">{label}</p>
+      <p className="text-base font-semibold text-zinc-100">{value}</p>
     </div>
   );
 }

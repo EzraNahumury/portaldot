@@ -32,7 +32,7 @@ except ImportError:
 
 PORTALDOT_SS58 = 42
 DEFAULT_WS = "ws://127.0.0.1:9944"
-DEFAULT_GAS_LIMIT = 1_000_000_000_000
+DEFAULT_GAS_LIMIT = {"ref_time": 100_000_000_000, "proof_size": 1_000_000}
 
 
 def parse_args() -> argparse.Namespace:
@@ -86,7 +86,6 @@ def main() -> int:
     substrate = SubstrateInterface(
         url=args.ws,
         ss58_format=PORTALDOT_SS58,
-        type_registry_preset="default",
     )
     print(f"      chain: {substrate.chain}, version: {substrate.runtime_version}")
 
@@ -107,14 +106,14 @@ def main() -> int:
     print(f"      timelock:  {args.timelock}s")
     contract = code.deploy(
         keypair=deployer,
-        endowment=args.endowment,
-        gas_limit=args.gas_limit,
         constructor="new",
         args={
             "guardians": guardians,
             "threshold": args.threshold,
             "timelock_seconds": args.timelock,
         },
+        value=args.endowment,
+        gas_limit=args.gas_limit,
         upload_code=True,
     )
 
