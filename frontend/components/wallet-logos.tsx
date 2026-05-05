@@ -1,135 +1,87 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
+import { cn } from "@/lib/cn";
 
-type IconProps = React.SVGProps<SVGSVGElement>;
+/**
+ * Official wallet logos vendored under /public/wallets. We render them as
+ * <Image> tiles with a soft ring so they pair well with the modal's dark
+ * surface, regardless of whether the source asset has a transparent or
+ * solid background.
+ */
 
-/* ------------------------------------------------------------------ */
-/*                       Curated wallet brand SVGs                     */
-/* ------------------------------------------------------------------ */
+interface LogoProps {
+  className?: string;
+  size?: number;
+}
 
-export function TalismanIcon(props: IconProps) {
+function Tile({
+  src,
+  alt,
+  bg,
+  className,
+  size = 36,
+  rounded = "rounded-md",
+}: LogoProps & {
+  src: string;
+  alt: string;
+  bg: string;
+  rounded?: string;
+}) {
   return (
-    <svg viewBox="0 0 32 32" {...props}>
-      <rect width={32} height={32} rx={7} fill="#FD4848" />
-      <path
-        d="M16 7c.7 0 1.3.5 1.4 1.2l.7 4 3.4-2.2c.6-.4 1.4-.3 1.9.3.4.6.3 1.4-.3 1.9l-3.5 2.6 4 1.2c.7.2 1.1 1 .9 1.7s-1 1.1-1.7.9l-4-1.2 2 3.5c.4.6.1 1.4-.5 1.8s-1.4.1-1.8-.5l-2-3.5-1 4c-.2.7-.9 1.1-1.6 1s-1.1-.9-1-1.6l1-4-3.5 2c-.6.4-1.4.1-1.7-.5s-.1-1.4.5-1.7l3.5-2-4-1.3c-.7-.2-1.1-1-.9-1.7s1-1.1 1.7-.9l4 1.3-2-3.5c-.4-.6-.1-1.4.5-1.8s1.4-.1 1.8.5l2 3.5L14.6 8.2c.1-.7.7-1.2 1.4-1.2z"
-        fill="#FFE3B0"
+    <span
+      className={cn(
+        "shrink-0 inline-flex items-center justify-center ring-1 ring-stone-800",
+        rounded,
+        className,
+      )}
+      style={{ width: size, height: size, background: bg }}
+    >
+      <Image
+        src={src}
+        alt={alt}
+        width={size}
+        height={size}
+        className={cn("object-contain", rounded)}
       />
-      <circle cx={16} cy={16} r={2.4} fill="#1A0707" />
-    </svg>
+    </span>
   );
 }
 
-export function SubWalletIcon(props: IconProps) {
+export function TalismanLogo(p: LogoProps) {
+  return <Tile src="/wallets/talisman.svg" alt="Talisman" bg="#FD4848" {...p} />;
+}
+
+export function SubWalletLogo(p: LogoProps) {
+  return <Tile src="/wallets/subwallet.png" alt="SubWallet" bg="#0D0D0D" {...p} />;
+}
+
+export function PolkadotJsLogo(p: LogoProps) {
   return (
-    <svg viewBox="0 0 32 32" {...props}>
-      <rect width={32} height={32} rx={7} fill="#004BFF" />
-      <path
-        d="M16 6.4 8.4 11v10l7.6 4.6L23.6 21V11L16 6.4Zm5 4.6v3.6l-2.6-1.5V12.5L21 11Zm-7 7.4v3.4L11.4 20v-3.5L14 18.4Zm-2.6-7.4 2.6 1.5v1.6L11.4 13v-2Zm7.2 9-2.6-1.5v-3.5l2.6 1.5v3.5Zm-1.4-5L14.6 18.5v-1.6L18.6 14.4 21 16l-2.8 1.5Z"
-        fill="#FFFFFF"
-      />
-    </svg>
+    <Tile src="/wallets/polkadot-js.svg" alt="Polkadot{.js}" bg="#FFFFFF" {...p} />
   );
 }
 
-export function PolkadotJsIcon(props: IconProps) {
+export function EnkryptLogo(p: LogoProps) {
+  return <Tile src="/wallets/enkrypt.png" alt="Enkrypt" bg="#1B1B47" {...p} />;
+}
+
+export function PolkaGateLogo(p: LogoProps) {
   return (
-    <svg viewBox="0 0 32 32" {...props}>
-      <rect width={32} height={32} rx={7} fill="#F7F7F7" />
-      <ellipse cx={16} cy={9} rx={3.6} ry={2} fill="#E6007A" />
-      <ellipse cx={16} cy={23} rx={3.6} ry={2} fill="#E6007A" />
-      <ellipse
-        cx={16}
-        cy={13}
-        rx={3.6}
-        ry={2}
-        transform="rotate(60 16 13)"
-        fill="#E6007A"
-      />
-      <ellipse
-        cx={16}
-        cy={19}
-        rx={3.6}
-        ry={2}
-        transform="rotate(120 16 19)"
-        fill="#E6007A"
-      />
-      <ellipse
-        cx={16}
-        cy={13}
-        rx={3.6}
-        ry={2}
-        transform="rotate(-60 16 13)"
-        fill="#E6007A"
-      />
-      <ellipse
-        cx={16}
-        cy={19}
-        rx={3.6}
-        ry={2}
-        transform="rotate(-120 16 19)"
-        fill="#E6007A"
-      />
-    </svg>
+    <Tile src="/wallets/polkagate.svg" alt="PolkaGate" bg="#0E2B25" {...p} />
   );
 }
 
-export function EnkryptIcon(props: IconProps) {
-  return (
-    <svg viewBox="0 0 32 32" {...props}>
-      <rect width={32} height={32} rx={7} fill="#7B68EE" />
-      <path
-        d="M9.6 9 16 6 22.4 9v6.4c0 4.6-3 8.5-6.4 9.6-3.4-1.1-6.4-5-6.4-9.6V9Z"
-        fill="#fff"
-        opacity={0.92}
-      />
-      <path
-        d="M14 14h4v1.6h-2.6v1.4H17v1.6h-1.6v1.6H18v1.6h-4Z"
-        fill="#7B68EE"
-      />
-    </svg>
-  );
+export function NovaWalletLogo(p: LogoProps) {
+  return <Tile src="/wallets/nova.png" alt="Nova Wallet" bg="#0F0F1A" {...p} />;
 }
 
-export function PolkaGateIcon(props: IconProps) {
-  return (
-    <svg viewBox="0 0 32 32" {...props}>
-      <rect width={32} height={32} rx={7} fill="#0E2B25" />
-      <path
-        d="M9 23V11l3.5-2.5h7L23 11v3.5h-3.5V12h-7v8H17v-3.5h2.5V20l-3.5 3H9Z"
-        fill="#5ACC94"
-      />
-      <circle cx={16} cy={17} r={1.6} fill="#5ACC94" />
-    </svg>
-  );
-}
-
-export function NovaWalletIcon(props: IconProps) {
-  return (
-    <svg viewBox="0 0 32 32" {...props}>
-      <rect width={32} height={32} rx={7} fill="#0F0F1A" />
-      <path
-        d="M16 6 9 12.5v7L16 26l7-6.5v-7L16 6Z"
-        fill="#0F0F1A"
-        stroke="#9E7BFF"
-        strokeWidth={1.2}
-      />
-      <path
-        d="m16 9 5 4.5v5L16 23l-5-4.5v-5L16 9Z"
-        fill="#9E7BFF"
-        opacity={0.85}
-      />
-      <circle cx={16} cy={16} r={1.5} fill="#FFE3FA" />
-    </svg>
-  );
-}
-
-export const WALLET_ICONS: Record<string, React.FC<IconProps>> = {
-  talisman: TalismanIcon,
-  "subwallet-js": SubWalletIcon,
-  "polkadot-js": PolkadotJsIcon,
-  enkrypt: EnkryptIcon,
-  polkagate: PolkaGateIcon,
-  nova: NovaWalletIcon,
+export const WALLET_ICONS: Record<string, React.FC<LogoProps>> = {
+  talisman: TalismanLogo,
+  "subwallet-js": SubWalletLogo,
+  "polkadot-js": PolkadotJsLogo,
+  enkrypt: EnkryptLogo,
+  polkagate: PolkaGateLogo,
+  nova: NovaWalletLogo,
 };
