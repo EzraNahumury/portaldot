@@ -109,7 +109,8 @@ export function WalletModal({ open, onClose }: Props) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.97, y: 10 }}
             transition={{ type: "spring", stiffness: 320, damping: 28 }}
-            className="relative w-full max-w-3xl max-h-[620px] overflow-hidden rounded-xl border border-stone-800 bg-stone-950 shadow-2xl grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"
+            style={{ maxHeight: "calc(100vh - 32px)" }}
+            className="relative w-full max-w-3xl overflow-hidden rounded-xl border border-stone-800 bg-stone-950 shadow-2xl grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"
           >
             {/* close */}
             <button
@@ -121,8 +122,8 @@ export function WalletModal({ open, onClose }: Props) {
             </button>
 
             {/* LEFT: wallet list */}
-            <div className="flex flex-col border-b md:border-b-0 md:border-r border-stone-900 min-h-0">
-              <div className="px-6 pt-5 pb-3">
+            <div className="flex flex-col border-b md:border-b-0 md:border-r border-stone-900 min-h-0 overflow-hidden">
+              <div className="px-6 pt-5 pb-3 shrink-0">
                 <h2
                   id="wallet-modal-title"
                   className="font-display text-[24px] leading-tight tracking-tight text-stone-100"
@@ -134,7 +135,7 @@ export function WalletModal({ open, onClose }: Props) {
                 </p>
               </div>
 
-              <div className="px-3 pb-4 max-h-[440px] overflow-y-auto">
+              <div className="px-3 pb-4 flex-1 overflow-y-auto">
                 {installedList.length > 0 && (
                   <Section label="Installed">
                     {installedList.map((w) => (
@@ -166,25 +167,26 @@ export function WalletModal({ open, onClose }: Props) {
             </div>
 
             {/* RIGHT: education panel */}
-            <div className="hidden md:flex flex-col bg-stone-950/60 px-7 py-7">
-              <h3 className="font-display text-[22px] leading-tight tracking-tight text-stone-100">
-                What is a wallet?
-              </h3>
+            <div className="hidden md:flex flex-col bg-stone-950/60 min-h-0 overflow-hidden">
+              <div className="px-7 py-7 flex-1 overflow-y-auto">
+                <h3 className="font-display text-[22px] leading-tight tracking-tight text-stone-100">
+                  What is a wallet?
+                </h3>
 
-              <div className="mt-6 space-y-5">
-                <Pitch
-                  icon={<KeyRound className="size-4" />}
-                  title="Your keys, your assets"
-                  body="A wallet holds the private key that signs transactions. PortalGuard never sees it."
-                />
-                <Pitch
-                  icon={<ShieldCheck className="size-4" />}
-                  title="A login that travels"
-                  body="One wallet works across every Substrate dApp. No passwords, no email — just sign."
-                />
+                <div className="mt-6 space-y-5">
+                  <Pitch
+                    icon={<KeyRound className="size-4" />}
+                    title="Your keys, your assets"
+                    body="A wallet holds the private key that signs transactions. PortalGuard never sees it."
+                  />
+                  <Pitch
+                    icon={<ShieldCheck className="size-4" />}
+                    title="A login that travels"
+                    body="One wallet works across every Substrate dApp. No passwords, no email — just sign."
+                  />
+                </div>
               </div>
-
-              <div className="mt-7 pt-6 border-t border-stone-900 flex items-center gap-3">
+              <div className="px-7 py-5 border-t border-stone-900 shrink-0 flex items-center gap-3">
                 <a
                   href="https://wiki.polkadot.network/docs/learn-account-generation"
                   target="_blank"
