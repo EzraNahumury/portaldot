@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
@@ -102,7 +103,12 @@ export function WalletModal({ open, onClose }: Props) {
     }
   }
 
-  return (
+  // Render via portal to escape any ancestor transform / backdrop-filter
+  // stacking contexts (e.g. the sticky Header) that would otherwise clip
+  // the dialog or break `position: fixed`.
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
@@ -110,7 +116,7 @@ export function WalletModal({ open, onClose }: Props) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15 }}
-          className="fixed inset-0 z-50 overflow-y-auto"
+          className="fixed inset-0 z-[100] overflow-y-auto"
           onClick={onClose}
         >
           {/* backdrop */}
@@ -228,7 +234,8 @@ export function WalletModal({ open, onClose }: Props) {
           </div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }
 
