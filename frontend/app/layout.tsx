@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import { Toaster } from "sonner";
 import { Header } from "@/components/Header";
 import "./globals.css";
@@ -14,10 +14,17 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const instrumentSerif = Instrument_Serif({
+  variable: "--font-instrument-serif",
+  subsets: ["latin"],
+  weight: "400",
+  style: ["normal", "italic"],
+});
+
 export const metadata: Metadata = {
-  title: "PortalGuard — Social Recovery on Portaldot",
+  title: "PortalGuard — Social recovery on Portaldot",
   description:
-    "Lose your seed phrase? PortalGuard lets trusted friends recover your Portaldot account on-chain. Self-custody without permanent loss.",
+    "Designate trusted friends as guardians. If you ever lose access, they can collectively restore your Portaldot account on chain.",
 };
 
 export default function RootLayout({
@@ -28,19 +35,22 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
+      className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} h-full antialiased dark`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col relative">
         <Header />
-        <main className="flex-1 flex flex-col">{children}</main>
+        <main className="relative flex-1 flex flex-col">{children}</main>
         <Toaster
           theme="dark"
           richColors
           closeButton
+          position="bottom-right"
           toastOptions={{
             style: {
-              background: "#0a0a0f",
-              border: "1px solid #27272a",
+              background: "#14110f",
+              border: "1px solid #2c2724",
+              color: "#f5f5f4",
+              fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
             },
           }}
         />

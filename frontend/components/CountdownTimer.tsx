@@ -2,16 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Timer, CheckCircle2 } from "lucide-react";
 import { formatTimeRemaining } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
 interface Props {
   targetTimestampMs: number;
   className?: string;
+  size?: "sm" | "md";
 }
 
-export function CountdownTimer({ targetTimestampMs, className }: Props) {
+export function CountdownTimer({ targetTimestampMs, className, size = "md" }: Props) {
   const [remaining, setRemaining] = useState(() =>
     Math.max(0, targetTimestampMs - Date.now()),
   );
@@ -25,35 +25,34 @@ export function CountdownTimer({ targetTimestampMs, className }: Props) {
 
   const expired = remaining <= 0;
   const urgent = !expired && remaining < 15_000;
+  const sizeC = size === "sm" ? "text-[12px] h-7 px-2.5" : "text-[13px] h-8 px-3";
 
   return (
-    <motion.div
-      animate={
-        urgent
-          ? { scale: [1, 1.04, 1] }
-          : expired
-          ? { scale: 1 }
-          : { scale: 1 }
-      }
+    <motion.span
+      animate={urgent ? { scale: [1, 1.025, 1] } : { scale: 1 }}
       transition={
         urgent
           ? { duration: 1, repeat: Infinity, ease: "easeInOut" }
           : { duration: 0 }
       }
       className={cn(
-        "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-mono transition-colors",
+        "inline-flex items-center gap-2 rounded-md font-mono tabular-nums border transition-colors",
+        sizeC,
         expired
-          ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/30"
+          ? "bg-emerald-500/[0.06] text-emerald-300 border-emerald-500/30"
           : urgent
-          ? "bg-rose-500/10 text-rose-300 border border-rose-500/40"
-          : "bg-amber-500/10 text-amber-300 border border-amber-500/30",
+          ? "bg-red-500/[0.07] text-red-300 border-red-500/35"
+          : "bg-amber-500/[0.06] text-amber-200 border-amber-500/30",
         className,
       )}
     >
-      {expired ? <CheckCircle2 className="size-4" /> : <Timer className="size-4" />}
-      <span className="tabular-nums">
-        {expired ? "Ready to execute" : formatTimeRemaining(remaining)}
-      </span>
-    </motion.div>
+      <span
+        className={cn(
+          "size-1.5 rounded-full",
+          expired ? "bg-emerald-400" : urgent ? "bg-red-400" : "bg-amber-400",
+        )}
+      />
+      {expired ? "ready · 00:00" : formatTimeRemaining(remaining)}
+    </motion.span>
   );
 }

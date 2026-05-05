@@ -11,10 +11,11 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
       <input
         ref={ref}
         className={cn(
-          "h-11 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 text-sm text-zinc-100",
-          "placeholder:text-zinc-500",
-          "focus:outline-none focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500/60",
-          "transition-colors",
+          "h-10 w-full rounded-md border border-stone-800 bg-stone-950 px-3 text-[13.5px] text-stone-100",
+          "placeholder:text-stone-600",
+          "transition-colors duration-150",
+          "hover:border-stone-700",
+          "focus:outline-none focus:border-emerald-400/60 focus:ring-2 focus:ring-emerald-400/15",
           className,
         )}
         {...rest}
@@ -32,10 +33,12 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
       <textarea
         ref={ref}
         className={cn(
-          "min-h-[88px] w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-zinc-100",
-          "placeholder:text-zinc-500",
-          "focus:outline-none focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500/60",
-          "transition-colors resize-y",
+          "min-h-[88px] w-full rounded-md border border-stone-800 bg-stone-950 px-3 py-2.5 text-[13.5px] text-stone-100",
+          "placeholder:text-stone-600",
+          "transition-colors duration-150",
+          "hover:border-stone-700",
+          "focus:outline-none focus:border-emerald-400/60 focus:ring-2 focus:ring-emerald-400/15",
+          "resize-y font-mono",
           className,
         )}
         {...rest}
@@ -52,10 +55,19 @@ export function Label({
   return (
     <label
       className={cn(
-        "block text-xs font-medium uppercase tracking-wide text-zinc-400 mb-2",
+        "block text-[11px] tracking-[0.12em] uppercase text-stone-500 mb-2 font-medium",
         className,
       )}
       {...props}
     />
+  );
+}
+
+export function FieldHint({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLParagraphElement>) {
+  return (
+    <p className={cn("mt-2 text-xs text-stone-500", className)} {...props} />
   );
 }

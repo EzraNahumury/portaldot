@@ -1,42 +1,72 @@
 "use client";
 
 import Link from "next/link";
-import { Shield } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { motion } from "framer-motion";
 import { ConnectWallet } from "./ConnectWallet";
+import { Badge } from "./ui/Badge";
+import { cn } from "@/lib/cn";
+
+const NAV = [
+  { href: "/setup", label: "Setup" },
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/recover", label: "Recover" },
+];
 
 export function Header() {
+  const pathname = usePathname();
   return (
-    <header className="sticky top-0 z-40 border-b border-zinc-900/80 bg-black/60 backdrop-blur-xl">
-      <div className="mx-auto max-w-6xl flex items-center justify-between px-6 h-16">
-        <Link href="/" className="flex items-center gap-2.5">
-          <div className="size-8 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-600 flex items-center justify-center shadow-[0_8px_30px_rgb(124,58,237,0.4)]">
-            <Shield className="size-4 text-white" strokeWidth={2.5} />
+    <header className="sticky top-0 z-40 border-b border-stone-900/80 backdrop-blur-xl bg-stone-950/70">
+      <div className="mx-auto max-w-6xl flex items-center justify-between px-6 h-14">
+        <Link href="/" className="flex items-center gap-3 group">
+          <div className="size-7 rounded-md bg-stone-100 flex items-center justify-center text-stone-950 font-medium text-[13px] tracking-tight">
+            P
           </div>
-          <div>
-            <div className="font-semibold text-zinc-100 leading-none">PortalGuard</div>
-            <div className="text-[10px] uppercase tracking-wider text-zinc-500 mt-0.5">
-              Portaldot · Social Recovery
-            </div>
+          <div className="flex items-center gap-2.5">
+            <span className="text-[15px] text-stone-100 font-medium tracking-tight">
+              PortalGuard
+            </span>
+            <span className="hidden sm:inline-block text-stone-700">/</span>
+            <span className="hidden sm:inline-block text-[12px] text-stone-500 font-mono">
+              v0.1
+            </span>
           </div>
         </Link>
+
         <nav className="hidden md:flex items-center gap-1">
-          <NavLink href="/setup">Setup</NavLink>
-          <NavLink href="/dashboard">Dashboard</NavLink>
-          <NavLink href="/recover">Recover</NavLink>
+          {NAV.map((it) => {
+            const active = pathname?.startsWith(it.href);
+            return (
+              <Link
+                key={it.href}
+                href={it.href}
+                className={cn(
+                  "relative px-3 h-8 inline-flex items-center text-[13px] rounded-md transition-colors",
+                  active
+                    ? "text-stone-100"
+                    : "text-stone-500 hover:text-stone-200",
+                )}
+              >
+                {active && (
+                  <motion.span
+                    layoutId="nav-active"
+                    className="absolute inset-0 rounded-md bg-stone-100/[0.05] border border-stone-800/80"
+                    transition={{ type: "spring", stiffness: 280, damping: 28 }}
+                  />
+                )}
+                <span className="relative">{it.label}</span>
+              </Link>
+            );
+          })}
         </nav>
-        <ConnectWallet />
+
+        <div className="flex items-center gap-3">
+          <Badge tone="ok" dot pulse className="hidden sm:inline-flex">
+            <span className="font-mono text-[10.5px]">localhost · 9944</span>
+          </Badge>
+          <ConnectWallet />
+        </div>
       </div>
     </header>
-  );
-}
-
-function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
-  return (
-    <Link
-      href={href}
-      className="px-3 py-2 text-sm text-zinc-400 hover:text-zinc-100 transition-colors rounded-lg hover:bg-zinc-900/60"
-    >
-      {children}
-    </Link>
   );
 }

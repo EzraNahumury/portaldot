@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Wallet, ChevronDown, LogOut } from "lucide-react";
+import { ChevronDown, LogOut, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { listAccounts } from "@/lib/wallet";
@@ -55,33 +55,34 @@ export function ConnectWallet() {
   if (!account) {
     return (
       <Button onClick={handleConnect} loading={loading} size="sm">
-        <Wallet className="size-4" />
-        Connect Wallet
+        <Wallet className="size-3.5" />
+        Connect
       </Button>
     );
   }
 
   return (
     <div className="relative" data-wallet-menu>
-      <Button
-        variant="secondary"
-        size="sm"
+      <button
         onClick={(e) => {
           e.stopPropagation();
           setOpen((v) => !v);
         }}
+        className="inline-flex items-center gap-2 h-8 px-2.5 rounded-md text-[12.5px] border border-stone-800 bg-stone-950 hover:border-stone-700 transition-colors"
       >
-        <span className="size-2 rounded-full bg-emerald-400" />
-        <span className="font-mono text-xs">{shortAddr(account.address)}</span>
-        <ChevronDown className="size-3.5 opacity-60" />
-      </Button>
+        <span className="size-1.5 rounded-full bg-emerald-400" />
+        <span className="font-mono text-stone-200">
+          {shortAddr(account.address, 4, 4)}
+        </span>
+        <ChevronDown className="size-3 text-stone-500" />
+      </button>
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-72 rounded-xl border border-zinc-800 bg-zinc-950 shadow-xl z-50 overflow-hidden">
-          <div className="p-3 border-b border-zinc-900">
-            <p className="text-xs uppercase tracking-wide text-zinc-500 mb-2">
+        <div className="absolute right-0 top-full mt-2 w-72 rounded-md border border-stone-800 bg-stone-950 shadow-2xl z-50 overflow-hidden">
+          <div className="p-3 border-b border-stone-900">
+            <p className="text-[10.5px] tracking-[0.12em] uppercase text-stone-500 font-medium mb-2">
               Switch account
             </p>
-            <div className="space-y-1 max-h-60 overflow-y-auto">
+            <div className="space-y-0.5 max-h-60 overflow-y-auto">
               {accounts.map((a) => (
                 <button
                   key={a.address}
@@ -89,14 +90,14 @@ export function ConnectWallet() {
                     setAccount(a);
                     setOpen(false);
                   }}
-                  className={`w-full text-left px-2.5 py-2 rounded-lg text-sm hover:bg-zinc-900 transition-colors ${
-                    a.address === account.address ? "bg-zinc-900" : ""
+                  className={`w-full text-left px-2.5 py-2 rounded-md text-sm hover:bg-stone-900 transition-colors ${
+                    a.address === account.address ? "bg-stone-900" : ""
                   }`}
                 >
-                  <div className="font-medium text-zinc-200 truncate">
+                  <div className="font-medium text-stone-200 truncate">
                     {a.meta.name || "Account"}
                   </div>
-                  <div className="font-mono text-xs text-zinc-500 truncate">
+                  <div className="font-mono text-[11px] text-stone-500 truncate">
                     {a.address}
                   </div>
                 </button>
@@ -105,9 +106,9 @@ export function ConnectWallet() {
           </div>
           <button
             onClick={handleDisconnect}
-            className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-rose-400 hover:bg-zinc-900 transition-colors"
+            className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-red-400 hover:bg-stone-900 transition-colors"
           >
-            <LogOut className="size-4" />
+            <LogOut className="size-3.5" />
             Disconnect
           </button>
         </div>

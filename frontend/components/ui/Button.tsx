@@ -3,52 +3,73 @@
 import * as React from "react";
 import { cn } from "@/lib/cn";
 
-type Variant = "primary" | "secondary" | "ghost" | "danger";
+type Variant = "primary" | "secondary" | "ghost" | "danger" | "link";
 type Size = "sm" | "md" | "lg";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
   size?: Size;
   loading?: boolean;
+  fullWidth?: boolean;
 }
 
 const variantStyles: Record<Variant, string> = {
   primary:
-    "bg-violet-500 text-white hover:bg-violet-400 active:bg-violet-600 focus-visible:ring-violet-500/40 shadow-[0_8px_30px_rgb(124,58,237,0.25)]",
+    "bg-stone-100 text-stone-950 hover:bg-white active:bg-stone-200 disabled:bg-stone-700 disabled:text-stone-400",
   secondary:
-    "bg-zinc-800 text-zinc-100 hover:bg-zinc-700 active:bg-zinc-900 focus-visible:ring-zinc-500/40 border border-zinc-700",
+    "bg-stone-900 text-stone-100 hover:bg-stone-800 active:bg-stone-950 border border-stone-800",
   ghost:
-    "bg-transparent text-zinc-300 hover:bg-zinc-800/60 active:bg-zinc-900 focus-visible:ring-zinc-500/40",
+    "bg-transparent text-stone-300 hover:text-stone-100 hover:bg-stone-900/60",
   danger:
-    "bg-rose-500 text-white hover:bg-rose-400 active:bg-rose-600 focus-visible:ring-rose-500/40",
+    "bg-red-500/15 text-red-300 hover:bg-red-500/25 active:bg-red-500/30 border border-red-500/30",
+  link:
+    "bg-transparent text-stone-300 hover:text-stone-100 underline underline-offset-4 decoration-stone-700 hover:decoration-stone-400",
 };
 
 const sizeStyles: Record<Size, string> = {
-  sm: "h-9 px-3 text-sm rounded-lg",
-  md: "h-11 px-5 text-sm rounded-xl",
-  lg: "h-14 px-7 text-base rounded-2xl",
+  sm: "h-8 px-3 text-[13px] rounded-md",
+  md: "h-10 px-4 text-sm rounded-md",
+  lg: "h-12 px-6 text-[15px] rounded-md",
 };
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = "primary", size = "md", loading, disabled, children, ...rest }, ref) => {
+  (
+    {
+      className,
+      variant = "primary",
+      size = "md",
+      loading,
+      disabled,
+      fullWidth,
+      children,
+      ...rest
+    },
+    ref,
+  ) => {
     return (
       <button
         ref={ref}
         disabled={disabled || loading}
         className={cn(
-          "relative inline-flex items-center justify-center gap-2 font-medium transition-all",
-          "focus-visible:outline-none focus-visible:ring-2",
-          "disabled:opacity-50 disabled:pointer-events-none",
+          "relative inline-flex items-center justify-center gap-1.5 font-medium transition-colors duration-150",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50 focus-visible:ring-offset-2 focus-visible:ring-offset-stone-950",
+          "disabled:cursor-not-allowed disabled:opacity-60",
           variantStyles[variant],
           sizeStyles[size],
+          fullWidth && "w-full",
           className,
         )}
         {...rest}
       >
         {loading && (
-          <span className="size-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+          <span
+            aria-hidden
+            className="absolute left-3 size-3.5 rounded-full border-[1.5px] border-current/30 border-t-current animate-spin"
+          />
         )}
-        {children}
+        <span className={cn("inline-flex items-center gap-1.5", loading && "pl-5")}>
+          {children}
+        </span>
       </button>
     );
   },
