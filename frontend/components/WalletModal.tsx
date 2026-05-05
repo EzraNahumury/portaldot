@@ -2,7 +2,14 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ExternalLink, Wallet as WalletIcon, KeyRound, ShieldCheck, ChevronRight } from "lucide-react";
+import {
+  X,
+  ExternalLink,
+  Wallet as WalletIcon,
+  KeyRound,
+  ShieldCheck,
+  ChevronRight,
+} from "lucide-react";
 import {
   WALLETS,
   detectInstalledIds,
@@ -50,6 +57,16 @@ export function WalletModal({ open, onClose }: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
+  // Lock body scroll while modal is open
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
   const { installedList, popularList } = useMemo(() => {
     const sortKey = (w: WalletInfo) =>
       recent && w.id === recent ? -1 : installed.indexOf(w.id);
@@ -93,120 +110,122 @@ export function WalletModal({ open, onClose }: Props) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15 }}
-          className="fixed inset-0 z-50 flex items-center justify-center px-4"
+          className="fixed inset-0 z-50 overflow-y-auto"
           onClick={onClose}
         >
           {/* backdrop */}
-          <div className="absolute inset-0 bg-stone-950/80 backdrop-blur-md" />
+          <div className="fixed inset-0 bg-stone-950/80 backdrop-blur-md" />
 
-          {/* sheet */}
-          <motion.div
-            role="dialog"
-            aria-modal
-            aria-labelledby="wallet-modal-title"
-            onClick={(e) => e.stopPropagation()}
-            initial={{ opacity: 0, scale: 0.97, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.97, y: 10 }}
-            transition={{ type: "spring", stiffness: 320, damping: 28 }}
-            style={{ maxHeight: "calc(100vh - 32px)" }}
-            className="relative w-full max-w-3xl overflow-hidden rounded-xl border border-stone-800 bg-stone-950 shadow-2xl grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"
-          >
-            {/* close */}
-            <button
-              onClick={onClose}
-              aria-label="Close"
-              className="absolute right-3 top-3 z-10 size-8 rounded-md border border-stone-800 bg-stone-900/60 hover:bg-stone-900 text-stone-400 hover:text-stone-100 inline-flex items-center justify-center transition-colors"
+          {/* viewport-padded scroll container */}
+          <div className="relative min-h-full flex items-start sm:items-center justify-center p-4 sm:p-8">
+            <motion.div
+              role="dialog"
+              aria-modal
+              aria-labelledby="wallet-modal-title"
+              onClick={(e) => e.stopPropagation()}
+              initial={{ opacity: 0, scale: 0.97, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.97, y: 10 }}
+              transition={{ type: "spring", stiffness: 320, damping: 28 }}
+              className="relative w-full max-w-3xl rounded-xl border border-stone-800 bg-stone-950 shadow-2xl overflow-hidden grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"
             >
-              <X className="size-4" />
-            </button>
+              {/* close */}
+              <button
+                onClick={onClose}
+                aria-label="Close"
+                className="absolute right-3 top-3 z-10 size-8 rounded-md border border-stone-800 bg-stone-900/60 hover:bg-stone-900 text-stone-400 hover:text-stone-100 inline-flex items-center justify-center transition-colors"
+              >
+                <X className="size-4" />
+              </button>
 
-            {/* LEFT: wallet list */}
-            <div className="flex flex-col border-b md:border-b-0 md:border-r border-stone-900 min-h-0 overflow-hidden">
-              <div className="px-6 pt-5 pb-3 shrink-0">
-                <h2
-                  id="wallet-modal-title"
-                  className="font-display text-[24px] leading-tight tracking-tight text-stone-100"
-                >
-                  Connect a wallet
-                </h2>
-                <p className="mt-1 text-[12.5px] text-stone-500">
-                  Substrate wallets work on Portaldot. Pick one below.
-                </p>
-              </div>
+              {/* LEFT */}
+              <div className="border-b md:border-b-0 md:border-r border-stone-900">
+                <div className="px-6 pt-5 pb-3">
+                  <h2
+                    id="wallet-modal-title"
+                    className="font-display text-[24px] leading-tight tracking-tight text-stone-100"
+                  >
+                    Connect a wallet
+                  </h2>
+                  <p className="mt-1 text-[12.5px] text-stone-500">
+                    Substrate wallets work on Portaldot. Pick one below.
+                  </p>
+                </div>
 
-              <div className="px-3 pb-4 flex-1 overflow-y-auto">
-                {installedList.length > 0 && (
-                  <Section label="Installed">
-                    {installedList.map((w) => (
+                <div className="px-3 pb-5">
+                  {installedList.length > 0 && (
+                    <Section label="Installed">
+                      {installedList.map((w) => (
+                        <WalletRow
+                          key={w.id}
+                          wallet={w}
+                          isInstalled
+                          isRecent={w.id === recent}
+                          loading={busy === w.id}
+                          onClick={() => handleSelect(w)}
+                        />
+                      ))}
+                    </Section>
+                  )}
+
+                  <Section
+                    label={installedList.length > 0 ? "Popular" : "Available"}
+                  >
+                    {popularList.map((w) => (
                       <WalletRow
                         key={w.id}
                         wallet={w}
-                        isInstalled
-                        isRecent={w.id === recent}
+                        isInstalled={false}
+                        isRecent={false}
                         loading={busy === w.id}
                         onClick={() => handleSelect(w)}
                       />
                     ))}
                   </Section>
-                )}
-
-                <Section label={installedList.length > 0 ? "Popular" : "Available wallets"}>
-                  {popularList.map((w) => (
-                    <WalletRow
-                      key={w.id}
-                      wallet={w}
-                      isInstalled={false}
-                      isRecent={false}
-                      loading={busy === w.id}
-                      onClick={() => handleSelect(w)}
-                    />
-                  ))}
-                </Section>
-              </div>
-            </div>
-
-            {/* RIGHT: education panel */}
-            <div className="hidden md:flex flex-col bg-stone-950/60 min-h-0 overflow-hidden">
-              <div className="px-7 py-7 flex-1 overflow-y-auto">
-                <h3 className="font-display text-[22px] leading-tight tracking-tight text-stone-100">
-                  What is a wallet?
-                </h3>
-
-                <div className="mt-6 space-y-5">
-                  <Pitch
-                    icon={<KeyRound className="size-4" />}
-                    title="Your keys, your assets"
-                    body="A wallet holds the private key that signs transactions. PortalGuard never sees it."
-                  />
-                  <Pitch
-                    icon={<ShieldCheck className="size-4" />}
-                    title="A login that travels"
-                    body="One wallet works across every Substrate dApp. No passwords, no email — just sign."
-                  />
                 </div>
               </div>
-              <div className="px-7 py-5 border-t border-stone-900 shrink-0 flex items-center gap-3">
-                <a
-                  href="https://wiki.polkadot.network/docs/learn-account-generation"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md bg-stone-100 text-stone-950 text-[13px] font-medium hover:bg-white transition-colors"
-                >
-                  <WalletIcon className="size-3.5" />
-                  Get a wallet
-                </a>
-                <a
-                  href="https://wiki.polkadot.network/docs/learn-account-generation"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[12px] text-stone-400 hover:text-stone-200 underline underline-offset-4 decoration-stone-700"
-                >
-                  Learn more
-                </a>
+
+              {/* RIGHT */}
+              <div className="hidden md:flex flex-col bg-stone-950/60">
+                <div className="px-7 pt-7 pb-6">
+                  <h3 className="font-display text-[22px] leading-tight tracking-tight text-stone-100">
+                    What is a wallet?
+                  </h3>
+                  <div className="mt-6 space-y-5">
+                    <Pitch
+                      icon={<KeyRound className="size-4" />}
+                      title="Your keys, your assets"
+                      body="A wallet holds the private key that signs transactions. PortalGuard never sees it."
+                    />
+                    <Pitch
+                      icon={<ShieldCheck className="size-4" />}
+                      title="A login that travels"
+                      body="One wallet works across every Substrate dApp. No passwords, no email — just sign."
+                    />
+                  </div>
+                </div>
+                <div className="mt-auto px-7 py-5 border-t border-stone-900 flex items-center gap-3">
+                  <a
+                    href="https://wiki.polkadot.network/docs/learn-account-generation"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md bg-stone-100 text-stone-950 text-[13px] font-medium hover:bg-white transition-colors"
+                  >
+                    <WalletIcon className="size-3.5" />
+                    Get a wallet
+                  </a>
+                  <a
+                    href="https://wiki.polkadot.network/docs/learn-account-generation"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[12px] text-stone-400 hover:text-stone-200 underline underline-offset-4 decoration-stone-700"
+                  >
+                    Learn more
+                  </a>
+                </div>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>
@@ -266,7 +285,9 @@ function WalletRow({
             </span>
           )}
         </div>
-        <p className="text-[11.5px] text-stone-500 truncate">{wallet.tagline}</p>
+        <p className="text-[11.5px] text-stone-500 truncate">
+          {wallet.tagline}
+        </p>
       </div>
       {loading ? (
         <span
