@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Trash2, Sparkles, Shield } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -22,6 +23,7 @@ import {
   secondsToBlocks,
   signAndSend,
 } from "@/lib/multisig";
+import { fadeUp, listItem, stagger } from "@/lib/motion";
 
 export default function SetupPage() {
   const router = useRouter();
@@ -103,21 +105,32 @@ export default function SetupPage() {
 
   return (
     <div className="mx-auto max-w-3xl w-full px-6 py-16">
-      <div className="mb-10">
-        <div className="inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/5 px-3 py-1 text-xs text-violet-300 mb-4">
+      <motion.div
+        variants={stagger(0.05, 0.08)}
+        initial="hidden"
+        animate="show"
+        className="mb-10"
+      >
+        <motion.div
+          variants={fadeUp}
+          className="inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/5 px-3 py-1 text-xs text-violet-300 mb-4"
+        >
           <Sparkles className="size-3" />
           Step 1
-        </div>
-        <h1 className="text-4xl font-semibold tracking-tight text-zinc-100">
+        </motion.div>
+        <motion.h1
+          variants={fadeUp}
+          className="text-4xl font-semibold tracking-tight text-zinc-100"
+        >
           Protect your account
-        </h1>
-        <p className="mt-3 text-zinc-400">
+        </motion.h1>
+        <motion.p variants={fadeUp} className="mt-3 text-zinc-400">
           Each guardian becomes a delayed proxy on your account. To recover, the
           guardian collective coordinates off-chain (M-of-N approvals) and one of
           them submits an on-chain announcement. The time-lock then gives you
           room to cancel before funds move.
-        </p>
-      </div>
+        </motion.p>
+      </motion.div>
 
       <Card>
         <CardHeader>
@@ -127,27 +140,37 @@ export default function SetupPage() {
           </CardDescription>
         </CardHeader>
         <CardBody className="space-y-3">
-          {guardians.map((g, i) => (
-            <div key={i} className="flex gap-2">
-              <div className="flex-1">
-                <Input
-                  placeholder={`Guardian ${i + 1} address (5...)`}
-                  value={g}
-                  onChange={(e) => updateGuardian(i, e.target.value)}
-                  className="font-mono"
-                />
-              </div>
-              <Button
-                variant="ghost"
-                size="md"
-                onClick={() => removeGuardianRow(i)}
-                disabled={guardians.length <= 1}
-                aria-label="Remove guardian"
+          <AnimatePresence initial={false}>
+            {guardians.map((g, i) => (
+              <motion.div
+                key={i}
+                variants={listItem}
+                initial="hidden"
+                animate="show"
+                exit="exit"
+                layout
+                className="flex gap-2"
               >
-                <Trash2 className="size-4" />
-              </Button>
-            </div>
-          ))}
+                <div className="flex-1">
+                  <Input
+                    placeholder={`Guardian ${i + 1} address (5...)`}
+                    value={g}
+                    onChange={(e) => updateGuardian(i, e.target.value)}
+                    className="font-mono"
+                  />
+                </div>
+                <Button
+                  variant="ghost"
+                  size="md"
+                  onClick={() => removeGuardianRow(i)}
+                  disabled={guardians.length <= 1}
+                  aria-label="Remove guardian"
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              </motion.div>
+            ))}
+          </AnimatePresence>
           <Button variant="secondary" size="sm" onClick={addGuardianRow}>
             <Plus className="size-4" />
             Add guardian

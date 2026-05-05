@@ -140,6 +140,16 @@ cargo contract build --release # produces target/ink/guardian_vault.{wasm,json,c
 
 ## Demo
 
+### Screenshots
+
+| Landing | Setup |
+| ------- | ----- |
+| ![Landing](docs/images/01-landing.png) | ![Setup](docs/images/02-setup.png) |
+
+| Dashboard | Recover |
+| --------- | ------- |
+| ![Dashboard](docs/images/03-dashboard.png) | ![Recover](docs/images/04-recover.png) |
+
 ### Video link
 _Will be embedded here after Demo Day recording._
 

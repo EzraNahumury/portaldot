@@ -1,12 +1,18 @@
-import * as React from "react";
-import { cn } from "@/lib/cn";
+"use client";
 
-export function Card({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
+import * as React from "react";
+import { motion, type HTMLMotionProps } from "framer-motion";
+import { cn } from "@/lib/cn";
+import { fadeUp } from "@/lib/motion";
+
+type DivProps = HTMLMotionProps<"div">;
+
+export function Card({ className, ...props }: DivProps) {
   return (
-    <div
+    <motion.div
+      variants={fadeUp}
+      initial="hidden"
+      animate="show"
       className={cn(
         "rounded-2xl border border-zinc-800 bg-zinc-950/70 backdrop-blur-md",
         "shadow-[0_1px_0_0_rgb(255,255,255,0.03)_inset,0_24px_60px_-30px_rgb(124,58,237,0.18)]",
