@@ -29,6 +29,21 @@ async function ensureEnabled(): Promise<void> {
 }
 
 /**
+ * Filter to keypair types Portaldot/Substrate can actually verify.
+ * Talisman/SubWallet expose Ethereum accounts through the same
+ * window.injectedWeb3 surface — we drop them here so the picker only
+ * lists addresses that can sign substrate extrinsics.
+ */
+function onlySubstrate(
+  accs: InjectedAccountWithMeta[],
+): InjectedAccountWithMeta[] {
+  return accs.filter((a) => {
+    const t = a.type ?? "sr25519";
+    return t === "sr25519" || t === "ed25519" || t === "ecdsa";
+  });
+}
+
+/**
  * Connect to a specific wallet by id and return its accounts. The picker
  * modal calls this with the user's chosen wallet, so accounts shown match
  * what the user actually selected.
@@ -45,14 +60,16 @@ export async function connectWallet(
     );
   }
   enabled = true;
-  return web3Accounts({ ss58Format: SS58_PREFIX, extensions: [id] });
+  const all = await web3Accounts({ ss58Format: SS58_PREFIX, extensions: [id] });
+  return onlySubstrate(all);
 }
 
 /** Used by smoke flows / fallback flows that don't go through the picker. */
 export async function listAccounts(): Promise<InjectedAccountWithMeta[]> {
   await ensureEnabled();
   const { web3Accounts } = await loadDapp();
-  return web3Accounts({ ss58Format: SS58_PREFIX });
+  const all = await web3Accounts({ ss58Format: SS58_PREFIX });
+  return onlySubstrate(all);
 }
 
 export async function getSigner(address: string): Promise<Signer> {
