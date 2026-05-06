@@ -79,15 +79,9 @@ export default function Home() {
             animate="show"
             className="md:col-span-7"
           >
-            <motion.div variants={heroItem}>
-              <Badge tone="ok" dot pulse>
-                <span className="font-mono text-[10.5px]">on portaldot · live</span>
-              </Badge>
-            </motion.div>
-
             <motion.h1
               variants={heroItem}
-              className="mt-7 font-display text-[64px] md:text-[88px] leading-[0.95] tracking-tight text-stone-50"
+              className="font-display text-[64px] md:text-[88px] leading-[0.95] tracking-tight text-stone-50"
             >
               Lose your keys.
               <br />

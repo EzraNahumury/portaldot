@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { ConnectWallet } from "./ConnectWallet";
-import { Badge } from "./ui/Badge";
 import { cn } from "@/lib/cn";
 
 const NAV = [
@@ -22,15 +21,9 @@ export function Header() {
           <div className="size-7 rounded-md bg-stone-100 flex items-center justify-center text-stone-950 font-medium text-[13px] tracking-tight">
             P
           </div>
-          <div className="flex items-center gap-2.5">
-            <span className="text-[15px] text-stone-100 font-medium tracking-tight">
-              PortalGuard
-            </span>
-            <span className="hidden sm:inline-block text-stone-700">/</span>
-            <span className="hidden sm:inline-block text-[12px] text-stone-500 font-mono">
-              v0.1
-            </span>
-          </div>
+          <span className="text-[15px] text-stone-100 font-medium tracking-tight">
+            PortalGuard
+          </span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-1">
@@ -60,12 +53,7 @@ export function Header() {
           })}
         </nav>
 
-        <div className="flex items-center gap-3">
-          <Badge tone="ok" dot pulse className="hidden sm:inline-flex">
-            <span className="font-mono text-[10.5px]">localhost · 9944</span>
-          </Badge>
-          <ConnectWallet />
-        </div>
+        <ConnectWallet />
       </div>
     </header>
   );
