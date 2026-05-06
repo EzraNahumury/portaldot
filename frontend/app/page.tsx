@@ -22,12 +22,7 @@ export default function Home() {
             transition={{ type: "spring", stiffness: 220, damping: 28 }}
             className="md:col-span-7"
           >
-            <span className="inline-flex items-center gap-2 text-[11px] tracking-[0.16em] uppercase text-emerald-300/80 font-medium">
-              <span className="size-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
-              Live on Portaldot
-            </span>
-
-            <h1 className="mt-6 font-display text-[56px] md:text-[80px] leading-[0.95] tracking-[-0.03em] text-stone-50">
+            <h1 className="font-display text-[56px] md:text-[80px] leading-[0.95] tracking-[-0.03em] text-stone-50">
               Lose your keys.
               <br />
               <span className="italic text-stone-400">Not</span> your assets.
