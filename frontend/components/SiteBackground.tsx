@@ -13,19 +13,19 @@ export function SiteBackground() {
   return (
     <div
       aria-hidden
-      className="fixed inset-0 -z-10 pointer-events-none"
-      style={{ contain: "strict" }}
+      className="fixed inset-0 pointer-events-none"
+      style={{ zIndex: 0 }}
     >
       <PixelBlast
         variant="circle"
         pixelSize={5}
         color="#34d399"
-        patternScale={3.2}
-        patternDensity={0.85}
-        pixelSizeJitter={0.4}
+        patternScale={3}
+        patternDensity={1.1}
+        pixelSizeJitter={0.5}
         enableRipples={false}
-        speed={0.35}
-        edgeFade={0.55}
+        speed={0.45}
+        edgeFade={0.35}
         transparent
       />
     </div>

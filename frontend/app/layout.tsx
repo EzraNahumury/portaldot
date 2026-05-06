@@ -46,8 +46,10 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col relative">
         <SiteBackground />
-        <Header />
-        <main className="relative flex-1 flex flex-col">{children}</main>
+        <div className="relative z-10 flex flex-col flex-1 min-h-full">
+          <Header />
+          <main className="relative flex-1 flex flex-col">{children}</main>
+        </div>
         <Toaster
           theme="dark"
           richColors
@@ -58,7 +60,7 @@ export default function RootLayout({
               background: "#14110f",
               border: "1px solid #2c2724",
               color: "#f5f5f4",
-              fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
+              fontFamily: "var(--font-jb-mono), ui-monospace, monospace",
             },
           }}
         />

@@ -37,9 +37,12 @@
   --font-display: var(--font-jb-mono);
 }
 
+html {
+  background: var(--bg);
+}
+
 html,
 body {
-  background: var(--bg);
   color: var(--text);
   font-family: var(--font-jb-mono), ui-monospace, "JetBrains Mono", "Fira Code", monospace;
   -webkit-font-smoothing: antialiased;
@@ -47,16 +50,8 @@ body {
   font-feature-settings: "ss01", "cv11";
 }
 
-/* faint film-grain background, very subtle */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background-image:
-    radial-gradient(circle at 20% 0%, rgba(52, 211, 153, 0.05) 0px, transparent 38%),
-    radial-gradient(circle at 80% 0%, rgba(255, 255, 255, 0.025) 0px, transparent 30%);
-  pointer-events: none;
-  z-index: 0;
+body {
+  background: transparent;
 }
 
 /* hairline divider helper */
