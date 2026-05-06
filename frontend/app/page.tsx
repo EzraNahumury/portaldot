@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import { ArrowRight, Users, Clock, ShieldCheck } from "lucide-react";
 import { GlowCard } from "@/components/ui/GlowCard";
 import { GuardianNetwork } from "@/components/ui/GuardianNetwork";
-import { ParticleField } from "@/components/ui/ParticleField";
 import { Spotlight } from "@/components/ui/Spotlight";
 import { Reveal, RevealItem } from "@/components/ui/ScrollReveal";
 
@@ -14,7 +13,6 @@ export default function Home() {
     <div className="flex flex-col">
       {/* HERO */}
       <section className="relative overflow-hidden border-b border-stone-900/80">
-        <ParticleField className="opacity-40" />
         <Spotlight color="52, 211, 153" intensity={0.12} />
 
         <div className="relative mx-auto max-w-6xl px-6 pt-20 pb-24 grid grid-cols-1 md:grid-cols-12 gap-12 items-center">
