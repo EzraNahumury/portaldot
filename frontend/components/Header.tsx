@@ -5,6 +5,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { ConnectWallet } from "./ConnectWallet";
+import { AccountBalance } from "./AccountBalance";
 import { cn } from "@/lib/cn";
 
 const NAV = [
@@ -60,7 +61,10 @@ export function Header() {
           })}
         </nav>
 
-        <ConnectWallet />
+        <div className="flex items-center gap-2">
+          <AccountBalance />
+          <ConnectWallet />
+        </div>
       </div>
     </header>
   );
