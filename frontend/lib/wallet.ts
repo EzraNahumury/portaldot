@@ -61,7 +61,14 @@ export async function connectWallet(
   }
   enabled = true;
   const all = await web3Accounts({ ss58Format: SS58_PREFIX, extensions: [id] });
-  return onlySubstrate(all);
+  const substrate = onlySubstrate(all);
+  if (substrate.length === 0 && all.length > 0) {
+    const evmCount = all.length - substrate.length;
+    throw new Error(
+      `${id} shared ${evmCount} Ethereum account(s) but no Substrate accounts. Open the extension → Settings → Connected Sites → localhost:3000 → enable a Polkadot/Substrate account.`,
+    );
+  }
+  return substrate;
 }
 
 /** Used by smoke flows / fallback flows that don't go through the picker. */
