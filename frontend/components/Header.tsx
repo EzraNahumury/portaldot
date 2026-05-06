@@ -19,17 +19,15 @@ export function Header() {
     <header className="sticky top-0 z-40 border-b border-stone-900/80 backdrop-blur-xl bg-stone-950/70">
       <div className="mx-auto max-w-6xl flex items-center justify-between px-6 h-14">
         <Link href="/" className="flex items-center gap-2.5 group">
-          <span className="block size-8 rounded-md bg-white p-1 shadow-[0_0_0_1px_rgba(255,255,255,0.06)]">
-            <Image
-              src="/image.png"
-              alt="PortalGuard logo"
-              width={64}
-              height={64}
-              className="size-full object-contain"
-              priority
-              unoptimized
-            />
-          </span>
+          <Image
+            src="/image.png"
+            alt="PortalGuard logo"
+            width={32}
+            height={32}
+            className="size-7 object-contain"
+            priority
+            unoptimized
+          />
           <span className="text-[15px] text-stone-100 font-medium tracking-tight">
             PortalGuard
           </span>
