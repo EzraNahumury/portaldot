@@ -32,16 +32,16 @@
   --color-muted: var(--text-muted);
   --color-line: var(--line);
   --color-accent: var(--accent);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-display: var(--font-instrument-serif);
+  --font-sans: var(--font-jb-mono);
+  --font-mono: var(--font-jb-mono);
+  --font-display: var(--font-jb-mono);
 }
 
 html,
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-jb-mono), ui-monospace, "JetBrains Mono", "Fira Code", monospace;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: "ss01", "cv11";
@@ -73,11 +73,11 @@ body::before {
   font-weight: 500;
 }
 
-/* serif display utility */
+/* display utility — use JetBrains Mono with tight tracking for headlines */
 .font-display {
-  font-family: var(--font-instrument-serif), Georgia, serif;
-  font-weight: 400;
-  letter-spacing: -0.01em;
+  font-family: var(--font-jb-mono), ui-monospace, monospace;
+  font-weight: 500;
+  letter-spacing: -0.02em;
 }
 
 /* selection */
